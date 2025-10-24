@@ -27,13 +27,37 @@ Una plataforma SaaS que permite gestionar tu Google Calendar a través de WhatsA
 - `DELETE /api/v1/calendar/events/:id` - Eliminar eventos
 - `GET /api/v1/calendar/availability` - Consultar disponibilidad
 
-### WhatsApp AI Assistant
-- Consulta de agenda diaria
-- Creación de citas mediante lenguaje natural
-- Búsqueda de horarios disponibles
-- Webhooks personalizables
+### WhatsApp Webhook Integration
+- Webhook endpoint to receive WhatsApp messages
+- Parses and validates incoming messages
+- Returns structured data for external processing
+- Supports webhook verification for security
 
-## 🛠️ Instalación
+## � Integración con n8n
+
+Esta aplicación está diseñada para trabajar perfectamente con n8n como sistema de automatización externo:
+
+### Flujo de Trabajo Recomendado:
+
+1. **WhatsApp → Webhook:** Los mensajes llegan al endpoint `/api/v1/whatsapp/webhook/:phone_number`
+2. **n8n Procesa:** n8n recibe los datos estructurados del webhook
+3. **Calendar API:** n8n consulta/modifica el calendario usando los endpoints de la API
+4. **Respuesta:** n8n envía la respuesta de vuelta vía WhatsApp API
+
+### Ejemplo de Workflow n8n:
+
+```
+[WhatsApp Webhook] → [Analizar Mensaje] → [Calendar API] → [Generar Respuesta] → [Enviar WhatsApp]
+```
+
+### APIs Útiles para n8n:
+
+- `GET /api/v1/calendar/events?date=2023-10-24` - Consultar agenda
+- `POST /api/v1/calendar/events` - Crear citas
+- `GET /api/v1/calendar/availability` - Verificar disponibilidad
+- `POST /api/v1/users/generate_api_token` - Obtener token de autenticación
+
+## �🛠️ Instalación
 
 ### Prerrequisitos
 - Ruby 3.0+
@@ -149,12 +173,28 @@ curl -X POST http://localhost:3000/api/v1/calendar/events \
 
 ## 📱 Uso de WhatsApp
 
-Una vez configurado tu número, puedes enviar mensajes como:
+Una vez configurado tu número, el webhook recibirá los mensajes y retornará datos estructurados para ser procesados por sistemas externos como n8n:
 
-- "¿Cómo está mi agenda hoy?"
-- "¿Estoy libre mañana a las 3 PM?"
-- "Agenda una reunión con Juan para el viernes"
-- "Muéstrame mi calendario de esta semana"
+**Respuesta del Webhook:**
+```json
+{
+  "status": "ok",
+  "user_id": 123,
+  "phone_number": "+1234567890",
+  "message": {
+    "from": "+1234567890",
+    "text": "¿Cómo está mi agenda hoy?",
+    "timestamp": "1698156000",
+    "message_id": "wamid.abc123"
+  }
+}
+```
+
+**Uso con n8n:**
+1. Configura un webhook en n8n
+2. Usa la API de Calendar para procesar las consultas
+3. Implementa tu lógica de IA personalizada
+4. Responde vía WhatsApp API
 
 ## 💰 Planes y Licencias
 
