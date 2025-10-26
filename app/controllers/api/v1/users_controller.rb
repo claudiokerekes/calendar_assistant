@@ -1,5 +1,6 @@
 class Api::V1::UsersController < ApplicationController
-  before_action :require_api_authentication
+  before_action :require_api_authentication, except: [:generate_api_token]
+  before_action :authenticate_user!, only: [:generate_api_token]
   
   # GET /api/v1/users/profile
   def profile
@@ -104,8 +105,10 @@ class Api::V1::UsersController < ApplicationController
   
   # POST /api/v1/users/generate_api_token
   def generate_api_token
+    user = @current_user || current_user
+    
     payload = {
-      user_id: @current_user.id,
+      user_id: user.id,
       exp: 30.days.from_now.to_i
     }
     

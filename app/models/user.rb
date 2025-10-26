@@ -9,15 +9,22 @@ class User < ApplicationRecord
   before_validation :set_defaults, on: :create
   
   def self.from_omniauth(auth)
-    where(google_id: auth.uid).first_or_create do |user|
-      user.email = auth.info.email
-      user.name = auth.info.name
-      user.google_id = auth.uid
-      user.provider = auth.provider
-      user.access_token = auth.credentials.token
-      user.refresh_token = auth.credentials.refresh_token
-      user.expires_at = Time.at(auth.credentials.expires_at) if auth.credentials.expires_at
+    user = where(google_id: auth.uid).first_or_initialize do |new_user|
+      new_user.email = auth.info.email
+      new_user.name = auth.info.name
+      new_user.google_id = auth.uid
+      new_user.provider = auth.provider
     end
+    
+    # Always update tokens and profile info (for both new and existing users)
+    user.access_token = auth.credentials.token
+    user.refresh_token = auth.credentials.refresh_token if auth.credentials.refresh_token
+    user.expires_at = Time.at(auth.credentials.expires_at) if auth.credentials.expires_at
+    user.email = auth.info.email
+    user.name = auth.info.name
+    
+    user.save!
+    user
   end
   
   def can_add_whatsapp_number?

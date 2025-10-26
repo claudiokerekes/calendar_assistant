@@ -15,6 +15,7 @@ Rails.application.routes.draw do
   # Authentication routes
   get '/login', to: 'sessions#new'
   get '/auth/:provider/callback', to: 'sessions#omniauth'
+  get '/logout', to: 'sessions#destroy'
   delete '/logout', to: 'sessions#destroy'
   get '/auth/failure', to: 'sessions#failure'
   
