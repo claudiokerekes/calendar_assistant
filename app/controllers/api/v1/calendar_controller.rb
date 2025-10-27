@@ -171,6 +171,115 @@ class Api::V1::CalendarController < ApplicationController
     end
   end
   
+  # GET /api/v1/calendar/schedule_config
+  def schedule_config
+    config = @current_user.calendar_configuration_for_llm
+    
+    render json: {
+      success: true,
+      data: config
+    }
+  rescue => e
+    render json: {
+      success: false,
+      error: e.message
+    }, status: 500
+  end
+
+  # GET /api/v1/calendar/schedule_config/:day
+  def schedule_config_for_day
+    day_of_week = params[:day].to_i
+    
+    unless (0..6).include?(day_of_week)
+      render json: {
+        success: false,
+        error: 'Día de la semana inválido. Debe ser 0-6 (0=Domingo, 6=Sábado)'
+      }, status: 400
+      return
+    end
+
+    day_name = CalendarConfig::DAY_NAMES[day_of_week]
+    configs = @current_user.calendar_config_for_day(day_of_week)
+    
+    if configs.any?
+      day_config = {
+        day_of_week: day_of_week,
+        day_name: day_name,
+        is_available: true,
+        time_slots: configs.map do |config|
+          {
+            id: config.id,
+            start_time: config.formatted_start_time,
+            end_time: config.formatted_end_time,
+            duration_hours: config.duration_in_hours,
+            notes: config.notes,
+            is_active: config.is_active
+          }
+        end,
+        total_available_hours: @current_user.available_hours_for_day(day_of_week)
+      }
+    else
+      day_config = {
+        day_of_week: day_of_week,
+        day_name: day_name,
+        is_available: false,
+        time_slots: [],
+        total_available_hours: 0
+      }
+    end
+
+    render json: {
+      success: true,
+      data: day_config
+    }
+  rescue => e
+    render json: {
+      success: false,
+      error: e.message
+    }, status: 500
+  end
+
+  # POST /api/v1/calendar/check_availability
+  def check_availability
+    date_time_str = params[:date_time]
+    
+    unless date_time_str
+      render json: {
+        success: false,
+        error: 'Parámetro date_time es requerido'
+      }, status: 400
+      return
+    end
+
+    begin
+      date_time = DateTime.parse(date_time_str)
+      is_available = @current_user.is_available_at_time?(date_time)
+      
+      render json: {
+        success: true,
+        data: {
+          date_time: date_time.iso8601,
+          day_of_week: date_time.wday,
+          day_name: CalendarConfig::DAY_NAMES[date_time.wday],
+          is_available: is_available,
+          user_timezone: "America/Bogota"
+        }
+      }
+    rescue ArgumentError => e
+      render json: {
+        success: false,
+        error: "Formato de fecha/hora inválido: #{e.message}"
+      }, status: 400
+    rescue => e
+      render json: {
+        success: false,
+        error: e.message
+      }, status: 500
+    end
+  end
+
+  private
+
   def generate_available_slots(start_time, end_time, events, duration_minutes)
     # Business hours: 9 AM to 6 PM
     business_start = start_time.change(hour: 9)

@@ -1,0 +1,155 @@
+<% content_for :title, "Nuevo Horario" %>
+
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Agregar Nuevo Horario</h4>
+            <%= link_to calendar_configs_path, class: "btn btn-outline-secondary" do %>
+              <i class="bi bi-arrow-left"></i> Volver
+            <% end %>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <%= form_with model: @calendar_config, local: true, html: { class: "needs-validation", novalidate: true } do |form| %>
+            <% if @calendar_config.errors.any? %>
+              <div class="alert alert-danger">
+                <h6>Se encontraron los siguientes errores:</h6>
+                <ul class="mb-0">
+                  <% @calendar_config.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+
+            <div class="mb-3">
+              <%= form.label :day_of_week, "Día de la semana:", class: "form-label" %>
+              <%= form.select :day_of_week, 
+                  options_for_select(CalendarConfig::DAY_NAMES.map { |num, name| [name, num] }),
+                  { prompt: "Selecciona un día" },
+                  { class: "form-select", required: true } %>
+              <div class="invalid-feedback">
+                Por favor selecciona un día de la semana.
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <%= form.label :start_time, "Hora de inicio:", class: "form-label" %>
+                  <%= form.time_field :start_time, 
+                      class: "form-control", 
+                      required: true,
+                      value: @calendar_config.start_time&.strftime("%H:%M") %>
+                  <div class="invalid-feedback">
+                    Por favor ingresa una hora de inicio válida.
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <%= form.label :end_time, "Hora de fin:", class: "form-label" %>
+                  <%= form.time_field :end_time, 
+                      class: "form-control", 
+                      required: true,
+                      value: @calendar_config.end_time&.strftime("%H:%M") %>
+                  <div class="invalid-feedback">
+                    Por favor ingresa una hora de fin válida.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check">
+                <%= form.check_box :is_active, { class: "form-check-input", checked: true } %>
+                <%= form.label :is_active, "Activo", class: "form-check-label" %>
+              </div>
+              <small class="form-text text-muted">
+                Solo los horarios activos serán considerados por el asistente para agendar citas.
+              </small>
+            </div>
+
+            <div class="mb-4">
+              <%= form.label :notes, "Notas (opcional):", class: "form-label" %>
+              <%= form.text_area :notes, 
+                  class: "form-control", 
+                  rows: 3, 
+                  placeholder: "Ej: Disponible para reuniones de trabajo, consultas médicas, etc." %>
+              <small class="form-text text-muted">
+                Estas notas ayudarán al asistente a entender mejor el contexto de este horario.
+              </small>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <%= link_to calendar_configs_path, class: "btn btn-secondary" do %>
+                <i class="bi bi-x-circle"></i> Cancelar
+              <% end %>
+              
+              <%= form.submit "Guardar Horario", class: "btn btn-primary" do %>
+                <i class="bi bi-check-circle"></i> Guardar Horario
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      
+      <!-- Información útil -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h6 class="mb-0"><i class="bi bi-info-circle"></i> Información</h6>
+        </div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li>Puedes configurar múltiples horarios para el mismo día.</li>
+            <li>Los horarios inactivos no serán considerados para agendar citas.</li>
+            <li>Las notas ayudan al asistente a entender mejor el propósito de cada horario.</li>
+            <li>Los horarios se utilizan en la zona horaria de Colombia (America/Bogota).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Validación personalizada del formulario
+(function() {
+  'use strict';
+  
+  const form = document.querySelector('.needs-validation');
+  const startTimeInput = document.querySelector('input[name="calendar_config[start_time]"]');
+  const endTimeInput = document.querySelector('input[name="calendar_config[end_time]"]');
+  
+  // Validación personalizada para verificar que end_time > start_time
+  function validateTimeRange() {
+    if (startTimeInput.value && endTimeInput.value) {
+      if (endTimeInput.value <= startTimeInput.value) {
+        endTimeInput.setCustomValidity('La hora de fin debe ser posterior a la hora de inicio');
+        return false;
+      } else {
+        endTimeInput.setCustomValidity('');
+        return true;
+      }
+    }
+    return true;
+  }
+  
+  startTimeInput.addEventListener('change', validateTimeRange);
+  endTimeInput.addEventListener('change', validateTimeRange);
+  
+  form.addEventListener('submit', function(event) {
+    if (!form.checkValidity() || !validateTimeRange()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    form.classList.add('was-validated');
+  });
+})();
+</script>

@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user: one
+  day_of_week: 1
+  start_time: 2025-10-25 23:18:11
+  end_time: 2025-10-25 23:18:11
+  is_active: false
+  notes: MyText
+
+two:
+  user: two
+  day_of_week: 1
+  start_time: 2025-10-25 23:18:11
+  end_time: 2025-10-25 23:18:11
+  is_active: false
+  notes: MyText

@@ -1,5 +1,6 @@
 class User < ApplicationRecord
   has_many :whatsapp_numbers, dependent: :destroy
+  has_many :calendar_configs, dependent: :destroy
   
   validates :email, presence: true, uniqueness: true
   validates :google_id, presence: true, uniqueness: true
@@ -48,6 +49,73 @@ class User < ApplicationRecord
     
     service.authorization = credentials
     service
+  end
+
+  # Métodos para configuración de calendario
+  def active_calendar_configs
+    calendar_configs.active.order(:day_of_week, :start_time)
+  end
+
+  def calendar_config_for_day(day_of_week)
+    calendar_configs.active.by_day(day_of_week)
+  end
+
+  def is_available_on_day?(day_of_week)
+    calendar_config_for_day(day_of_week).exists?
+  end
+
+  def is_available_at_time?(date_time)
+    day_of_week = date_time.wday
+    configs = calendar_config_for_day(day_of_week)
+    
+    configs.any? { |config| config.includes_time?(date_time) }
+  end
+
+  def available_hours_for_day(day_of_week)
+    configs = calendar_config_for_day(day_of_week)
+    total_hours = 0
+    
+    configs.each do |config|
+      total_hours += config.duration_in_hours
+    end
+    
+    total_hours
+  end
+
+  # Obtiene toda la configuración en formato JSON para n8n
+  def calendar_configuration_for_llm
+    config_data = {
+      user_id: id,
+      user_name: name,
+      user_email: email,
+      timezone: "America/Bogota", # Puedes hacer esto configurable
+      weekly_schedule: {}
+    }
+
+    CalendarConfig::DAY_NAMES.each do |day_num, day_name|
+      day_configs = calendar_config_for_day(day_num)
+      
+      if day_configs.any?
+        config_data[:weekly_schedule][day_name.downcase] = {
+          is_available: true,
+          time_slots: day_configs.map do |config|
+            {
+              start_time: config.formatted_start_time,
+              end_time: config.formatted_end_time,
+              duration_hours: config.duration_in_hours,
+              notes: config.notes
+            }
+          end
+        }
+      else
+        config_data[:weekly_schedule][day_name.downcase] = {
+          is_available: false,
+          time_slots: []
+        }
+      end
+    end
+
+    config_data
   end
   
   private

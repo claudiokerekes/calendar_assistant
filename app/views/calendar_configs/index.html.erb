@@ -1,0 +1,216 @@
+<% content_for :title, "Configuración de Horarios" %>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Configuración de Horarios</h2>
+        <div>
+          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkConfigModal">
+            <i class="bi bi-plus-circle"></i> Configurar Múltiples Días
+          </button>
+          <%= link_to new_calendar_config_path, class: "btn btn-primary" do %>
+            <i class="bi bi-plus"></i> Agregar Horario
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Resumen semanal -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Resumen Semanal</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <% CalendarConfig::DAY_NAMES.each do |day_num, day_name| %>
+                  <div class="col-md-3 col-sm-6 mb-2">
+                    <% configs = current_user.calendar_config_for_day(day_num) %>
+                    <div class="p-2 rounded <%= configs.any? ? 'bg-success text-white' : 'bg-light' %>">
+                      <strong><%= day_name %></strong><br>
+                      <% if configs.any? %>
+                        <small>
+                          <%= pluralize(configs.count, 'horario') %><br>
+                          <% total_hours = current_user.available_hours_for_day(day_num) %>
+                          <%= total_hours %> horas disponibles
+                        </small>
+                      <% else %>
+                        <small class="text-muted">Sin configurar</small>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de configuraciones -->
+      <div class="row">
+        <div class="col-12">
+          <% if @calendar_configs.any? %>
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Horarios Configurados</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Día</th>
+                        <th>Horario</th>
+                        <th>Duración</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% @calendar_configs.each do |config| %>
+                        <tr>
+                          <td><strong><%= config.day_name %></strong></td>
+                          <td><%= config.formatted_time_range %></td>
+                          <td><%= config.duration_in_hours %> horas</td>
+                          <td>
+                            <span class="badge <%= config.is_active? ? 'bg-success' : 'bg-secondary' %>">
+                              <%= config.is_active? ? 'Activo' : 'Inactivo' %>
+                            </span>
+                          </td>
+                          <td>
+                            <%= truncate(config.notes, length: 50) if config.notes.present? %>
+                          </td>
+                          <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                              <%= link_to edit_calendar_config_path(config), class: "btn btn-outline-primary btn-sm" do %>
+                                <i class="bi bi-pencil"></i>
+                              <% end %>
+                              
+                              <%= button_to toggle_active_calendar_config_path(config), 
+                                  method: :patch, 
+                                  remote: true,
+                                  class: "btn btn-outline-#{config.is_active? ? 'warning' : 'success'} btn-sm",
+                                  title: config.is_active? ? 'Desactivar' : 'Activar' do %>
+                                <i class="bi bi-toggle-<%= config.is_active? ? 'on' : 'off' %>"></i>
+                              <% end %>
+                              
+                              <%= link_to calendar_config_path(config), 
+                                  method: :delete,
+                                  class: "btn btn-outline-danger btn-sm",
+                                  confirm: "¿Estás seguro de eliminar esta configuración?",
+                                  title: "Eliminar" do %>
+                                <i class="bi bi-trash"></i>
+                              <% end %>
+                            </div>
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <div class="card">
+              <div class="card-body text-center py-5">
+                <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
+                <h4>No tienes horarios configurados</h4>
+                <p class="text-muted">Configura tus horarios disponibles para que el asistente pueda agendar citas automáticamente.</p>
+                <%= link_to new_calendar_config_path, class: "btn btn-primary" do %>
+                  <i class="bi bi-plus"></i> Configurar Primer Horario
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para configuración masiva -->
+<div class="modal fade" id="bulkConfigModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <%= form_with url: bulk_create_calendar_configs_path, method: :post, local: true do |form| %>
+        <div class="modal-header">
+          <h5 class="modal-title">Configurar Múltiples Días</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Selecciona los días:</label>
+            <div class="row">
+              <% CalendarConfig::DAY_NAMES.each do |day_num, day_name| %>
+                <div class="col-6 mb-2">
+                  <div class="form-check">
+                    <%= check_box_tag "days[]", day_num, false, id: "day_#{day_num}", class: "form-check-input" %>
+                    <%= label_tag "day_#{day_num}", day_name, class: "form-check-label" %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <%= form.label :start_time, "Hora de inicio:", class: "form-label" %>
+            <%= form.time_field :start_time, class: "form-control", required: true %>
+          </div>
+          
+          <div class="mb-3">
+            <%= form.label :end_time, "Hora de fin:", class: "form-label" %>
+            <%= form.time_field :end_time, class: "form-control", required: true %>
+          </div>
+          
+          <div class="mb-3">
+            <%= form.label :notes, "Notas (opcional):", class: "form-label" %>
+            <%= form.text_area :notes, class: "form-control", rows: 3, placeholder: "Ej: Disponible para reuniones de trabajo" %>
+          </div>
+          
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Nota:</strong> Esta acción reemplazará cualquier configuración existente para los días seleccionados.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <%= form.submit "Configurar Horarios", class: "btn btn-success" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+// JavaScript para manejar activación/desactivación con AJAX
+document.addEventListener('DOMContentLoaded', function() {
+  const toggleButtons = document.querySelectorAll('form[action*="toggle_active"]');
+  
+  toggleButtons.forEach(button => {
+    button.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      fetch(this.action, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload(); // Recargar la página para actualizar el estado
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar el estado');
+      });
+    });
+  });
+});
+</script>

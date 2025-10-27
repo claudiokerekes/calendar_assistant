@@ -23,6 +23,16 @@ Rails.application.routes.draw do
   get '/dashboard', to: 'dashboard#index'
   get '/dashboard/whatsapp', to: 'dashboard#whatsapp_numbers'
   
+  # Calendar configuration routes
+  resources :calendar_configs do
+    member do
+      patch :toggle_active
+    end
+    collection do
+      post :bulk_create
+    end
+  end
+  
   # API routes
   namespace :api do
     namespace :v1 do
@@ -32,6 +42,9 @@ Rails.application.routes.draw do
           get :events
           post :events, action: :create_event
           get :availability
+          get :schedule_config
+          post :check_availability
+          get 'schedule_config/:day', action: :schedule_config_for_day
         end
         member do
           put '/', action: :update_event

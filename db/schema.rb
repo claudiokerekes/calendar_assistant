@@ -10,9 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_10_24_030054) do
+ActiveRecord::Schema[7.2].define(version: 2025_10_26_041811) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "calendar_configs", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.integer "day_of_week"
+    t.time "start_time"
+    t.time "end_time"
+    t.boolean "is_active"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_calendar_configs_on_user_id"
+  end
 
   create_table "users", force: :cascade do |t|
     t.string "email", null: false
@@ -41,5 +53,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_24_030054) do
     t.index ["user_id"], name: "index_whatsapp_numbers_on_user_id"
   end
 
+  add_foreign_key "calendar_configs", "users"
   add_foreign_key "whatsapp_numbers", "users"
 end

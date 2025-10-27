@@ -58,6 +58,62 @@
       </div>
     </div>
   </div>
+
+  <!-- Calendar Configuration Section -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">📅 Configuración de Horarios</h5>
+            <%= link_to calendar_configs_path, class: "btn btn-sm btn-primary" do %>
+              <i class="bi bi-gear"></i> Configurar Horarios
+            <% end %>
+          </div>
+        </div>
+        <div class="card-body">
+          <% total_configs = current_user.calendar_configs.active.count %>
+          <% if total_configs > 0 %>
+            <div class="row">
+              <div class="col-md-8">
+                <p class="mb-2">
+                  <span class="h5 text-success"><%= total_configs %></span> horario(s) activo(s) configurado(s)
+                </p>
+                <div class="row">
+                  <% CalendarConfig::DAY_NAMES.each do |day_num, day_name| %>
+                    <% day_configs = current_user.calendar_config_for_day(day_num) %>
+                    <div class="col-6 col-md-3 mb-1">
+                      <small class="<%= day_configs.any? ? 'text-success fw-bold' : 'text-muted' %>">
+                        <%= day_name.truncate(3, omission: '') %>
+                        <% if day_configs.any? %>
+                          (✓)
+                        <% end %>
+                      </small>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+              <div class="col-md-4 text-end">
+                <small class="text-muted">
+                  Tus horarios están configurados y listos para que el asistente AI pueda agendar citas automáticamente.
+                </small>
+              </div>
+            </div>
+          <% else %>
+            <div class="text-center py-3">
+              <i class="bi bi-calendar-x display-6 text-muted mb-2"></i>
+              <p class="text-muted mb-3">
+                No tienes horarios configurados. Configura tus horarios disponibles para que el asistente pueda agendar citas automáticamente.
+              </p>
+              <%= link_to calendar_configs_path, class: "btn btn-primary" do %>
+                <i class="bi bi-plus-circle"></i> Configurar Primer Horario
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
   
   <!-- WhatsApp Numbers -->
   <% if @whatsapp_numbers.any? %>
