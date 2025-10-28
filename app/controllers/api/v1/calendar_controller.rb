@@ -1,12 +1,32 @@
 class Api::V1::CalendarController < ApplicationController
-  before_action :require_api_authentication
-  before_action :ensure_google_calendar_access
+  skip_before_action :verify_authenticity_token # Skip CSRF for API endpoints
+  before_action :require_api_authentication, except: [:user_schedule, :user_schedule_for_day]
+  before_action :ensure_google_calendar_access, except: [:user_schedule, :user_schedule_for_day]
   
   # GET /api/v1/calendar/events?date=2023-10-24
   def events
     date = Date.parse(params[:date]) rescue Date.current
     start_time = date.beginning_of_day.iso8601
     end_time = date.end_of_day.iso8601
+    
+    # Obtener la configuración de horarios para el día consultado
+    day_of_week = date.wday
+    calendar_configs = @current_user.calendar_configs.active.where(day_of_week: day_of_week)
+    
+    # Formatear la configuración de horarios
+    schedule_config = {
+      date: date.strftime('%Y-%m-%d'),
+      day_name: CalendarConfig::DAY_NAMES[day_of_week],
+      is_available: calendar_configs.any?,
+      time_slots: calendar_configs.map do |config|
+        {
+          start_time: config.start_time.strftime('%H:%M'),
+          end_time: config.end_time.strftime('%H:%M'),
+          duration_hours: config.duration_in_hours,
+          notes: config.notes
+        }
+      end
+    }
     
     begin
       events = @current_user.google_calendar_service.list_events(
@@ -29,11 +49,31 @@ class Api::V1::CalendarController < ApplicationController
         }
       end
       
-      render json: { events: formatted_events }
+      render json: { 
+        success: true,
+        data: {
+          schedule_config: schedule_config,
+          events: formatted_events
+        }
+      }
     rescue Google::Apis::AuthorizationError
-      render json: { error: 'Calendar access denied. Please re-authenticate.' }, status: :unauthorized
+      render json: { 
+        success: false,
+        error: 'Calendar access denied. Please re-authenticate.',
+        data: {
+          schedule_config: schedule_config,
+          events: []
+        }
+      }, status: :unauthorized
     rescue StandardError => e
-      render json: { error: e.message }, status: :internal_server_error
+      render json: { 
+        success: false,
+        error: e.message,
+        data: {
+          schedule_config: schedule_config,
+          events: []
+        }
+      }, status: :internal_server_error
     end
   end
   
@@ -163,13 +203,7 @@ class Api::V1::CalendarController < ApplicationController
     end
   end
   
-  private
-  
-  def ensure_google_calendar_access
-    unless @current_user.access_token
-      render json: { error: 'Google Calendar not connected. Please authenticate.' }, status: :unauthorized
-    end
-  end
+
   
   # GET /api/v1/calendar/schedule_config
   def schedule_config
@@ -278,7 +312,122 @@ class Api::V1::CalendarController < ApplicationController
     end
   end
 
+  # GET /api/v1/calendar/user_schedule/:user_id
+  def user_schedule
+    user_id = params[:user_id]
+    
+    unless user_id
+      render json: {
+        success: false,
+        error: 'Parámetro user_id es requerido'
+      }, status: 400
+      return
+    end
+
+    begin
+      user = User.find(user_id)
+      config = user.calendar_configuration_for_llm
+      
+      render json: {
+        success: true,
+        data: config
+      }
+    rescue ActiveRecord::RecordNotFound
+      render json: {
+        success: false,
+        error: 'Usuario no encontrado'
+      }, status: 404
+    rescue => e
+      render json: {
+        success: false,
+        error: e.message
+      }, status: 500
+    end
+  end
+
+  # GET /api/v1/calendar/user_schedule/:user_id/:day
+  def user_schedule_for_day
+    user_id = params[:user_id]
+    day_of_week = params[:day].to_i
+    
+    unless user_id
+      render json: {
+        success: false,
+        error: 'Parámetro user_id es requerido'
+      }, status: 400
+      return
+    end
+
+    unless (0..6).include?(day_of_week)
+      render json: {
+        success: false,
+        error: 'Día de la semana inválido. Debe ser 0-6 (0=Domingo, 6=Sábado)'
+      }, status: 400
+      return
+    end
+
+    begin
+      user = User.find(user_id)
+      day_name = CalendarConfig::DAY_NAMES[day_of_week]
+      configs = user.calendar_config_for_day(day_of_week)
+      
+      if configs.any?
+        day_config = {
+          user_id: user.id,
+          user_name: user.name,
+          user_email: user.email,
+          day_of_week: day_of_week,
+          day_name: day_name,
+          is_available: true,
+          time_slots: configs.map do |config|
+            {
+              id: config.id,
+              start_time: config.formatted_start_time,
+              end_time: config.formatted_end_time,
+              duration_hours: config.duration_in_hours,
+              notes: config.notes,
+              is_active: config.is_active
+            }
+          end,
+          total_available_hours: user.available_hours_for_day(day_of_week)
+        }
+      else
+        day_config = {
+          user_id: user.id,
+          user_name: user.name,
+          user_email: user.email,
+          day_of_week: day_of_week,
+          day_name: day_name,
+          is_available: false,
+          time_slots: [],
+          total_available_hours: 0
+        }
+      end
+
+      render json: {
+        success: true,
+        data: day_config
+      }
+    rescue ActiveRecord::RecordNotFound
+      render json: {
+        success: false,
+        error: 'Usuario no encontrado'
+      }, status: 404
+    rescue => e
+      render json: {
+        success: false,
+        error: e.message
+      }, status: 500
+    end
+  end
+
   private
+  
+  def ensure_google_calendar_access
+    unless @current_user.access_token
+      render json: { error: 'Google Calendar not connected. Please authenticate.' }, status: :unauthorized
+    end
+  end
 
   def generate_available_slots(start_time, end_time, events, duration_minutes)
     # Business hours: 9 AM to 6 PM

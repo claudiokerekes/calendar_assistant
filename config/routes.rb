@@ -45,6 +45,8 @@ Rails.application.routes.draw do
           get :schedule_config
           post :check_availability
           get 'schedule_config/:day', action: :schedule_config_for_day
+          get 'user_schedule/:user_id', action: :user_schedule
+          get 'user_schedule/:user_id/:day', action: :user_schedule_for_day
         end
         member do
           put '/', action: :update_event
