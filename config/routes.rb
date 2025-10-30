@@ -69,9 +69,12 @@ Rails.application.routes.draw do
         end
       end
       
-      # WhatsApp webhook
-      post 'whatsapp/webhook/:phone_number', to: 'whatsapp#webhook'
-      get 'whatsapp/webhook/:phone_number', to: 'whatsapp#verify_webhook'
+      # Conversations API
+      post 'conversations/message', to: 'conversations#create_message'
+      get 'conversations/context', to: 'conversations#get_context'
+      
+      # WhatsApp API
+      get 'whatsapp/user_by_phone', to: 'whatsapp#user_by_phone'
     end
   end
 end

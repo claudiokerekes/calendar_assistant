@@ -1,5 +1,5 @@
 <div class="container mt-4">
-  <div class="row">
+  <div class="row            <h6>🔗 Integración:</h6>>
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>📱 Gestión de WhatsApp</h1>
@@ -24,12 +24,6 @@
                 <div class="form-text">Incluye el código de país (ej: +52, +1, +34)</div>
               </div>
               
-              <div class="mb-3">
-                <%= form.label :webhook_url, "Webhook URL (opcional)", class: "form-label" %>
-                <%= form.url_field :webhook_url, class: "form-control", placeholder: "https://tu-app.com/webhook" %>
-                <div class="form-text">URL personalizada para recibir webhooks</div>
-              </div>
-              
               <div class="mb-3 form-check">
                 <%= form.check_box :is_active, class: "form-check-input", checked: true %>
                 <%= form.label :is_active, "Activar inmediatamente", class: "form-check-label" %>
@@ -44,22 +38,18 @@
       <div class="col-md-6">
         <div class="card bg-light">
           <div class="card-body">
-            <h6 class="card-title">ℹ️ Instrucciones</h6>
-            <ol>
-              <li>Agrega tu número de WhatsApp con código de país</li>
-              <li>Copia la URL del webhook que se generará</li>
-              <li>Configura esta URL en tu proveedor de WhatsApp API</li>
-              <li>¡Comienza a chatear con tu asistente!</li>
-            </ol>
+            <h6 class="card-title">ℹ️ Información</h6>
+            <p>Los números de WhatsApp registrados se usan para identificar qué usuario corresponde a cada conversación.</p>
+            <p>Estos números se integran con n8n para manejar automáticamente las conversaciones y el calendario.</p>
             
             <hr>
             
-            <h6>🔧 Proveedores compatibles:</h6>
+            <h6>� Integración:</h6>
             <ul class="list-unstyled">
-              <li>• Twilio WhatsApp API</li>
-              <li>• WhatsApp Business API</li>
-              <li>• Meta WhatsApp Cloud API</li>
-              <li>• 360Dialog</li>
+              <li>• n8n maneja los webhooks de WhatsApp</li>
+              <li>• Esta app almacena las conversaciones</li>
+              <li>• Gestiona los horarios de atención</li>
+              <li>• Integra con Google Calendar</li>
             </ul>
           </div>
         </div>
@@ -92,7 +82,6 @@
                   <tr>
                     <th>Número</th>
                     <th>Estado</th>
-                    <th>Webhook URL</th>
                     <th>Creado</th>
                     <th>Acciones</th>
                   </tr>
@@ -110,24 +99,10 @@
                           <span class="badge bg-secondary">Inactivo</span>
                         <% end %>
                       </td>
-                      <td>
-                        <% if number.webhook_url.present? %>
-                          <small class="text-muted"><%= number.webhook_url %></small>
-                        <% else %>
-                          <small class="text-muted">
-                            <%= request.base_url %>/api/v1/whatsapp/webhook/<%= number.phone_number %>
-                          </small>
-                        <% end %>
-                      </td>
+
                       <td><%= number.created_at&.strftime("%d/%m/%Y %H:%M") || "N/A" %></td>
                       <td>
                         <div class="btn-group btn-group-sm">
-                          <button class="btn btn-outline-primary" onclick="copyWebhookUrl('<%= number.phone_number %>')">
-                            📋 Copiar URL
-                          </button>
-                          <button class="btn btn-outline-secondary" onclick="testWebhook('<%= number.phone_number %>')">
-                            🧪 Test
-                          </button>
                           <button class="btn btn-outline-danger" onclick="deleteNumber(<%= number.id %>)">
                             🗑️ Eliminar
                           </button>
@@ -146,46 +121,64 @@
               <% end %>
             </div>
           <% end %>
-        </div>
       </div>
     </div>
   </div>
   
-  <!-- Webhook Testing -->
+  <!-- API Information for n8n Integration -->
   <div class="row mt-4">
     <div class="col-12">
       <div class="card">
         <div class="card-header">
-          <h5 class="mb-0">🧪 Prueba tu Webhook</h5>
+          <h5 class="mb-0">🔗 APIs para n8n</h5>
         </div>
         <div class="card-body">
-          <p>Envía un mensaje de prueba a tu webhook para verificar que todo funciona correctamente:</p>
+          <p>Usa estos endpoints en tu flujo de n8n para integrar WhatsApp con el calendario:</p>
           
           <div class="row">
             <div class="col-md-6">
-              <div class="mb-3">
-                <label class="form-label">Número de WhatsApp</label>
-                <select id="test-phone-number" class="form-select">
-                  <option value="">Selecciona un número</option>
-                  <% @whatsapp_numbers.each do |number| %>
-                    <option value="<%= number.phone_number %>"><%= number.phone_number %></option>
-                  <% end %>
-                </select>
+              <h6>1. Identificar Usuario</h6>
+              <div class="bg-light p-3 rounded mb-3">
+                <code>GET /api/v1/whatsapp/user_by_phone?phone_number=+1234567890</code>
               </div>
+              <p><small class="text-muted">Obtiene el user_id basado en el número de WhatsApp</small></p>
             </div>
+            
             <div class="col-md-6">
-              <div class="mb-3">
-                <label class="form-label">Mensaje de prueba</label>
-                <input type="text" id="test-message" class="form-control" value="Hola, ¿cómo está mi agenda hoy?" placeholder="Escribe un mensaje...">
+              <h6>2. Guardar Mensaje</h6>
+              <div class="bg-light p-3 rounded mb-3">
+                <code>POST /api/v1/conversations/message</code>
               </div>
+              <p><small class="text-muted">Almacena mensajes del cliente o del sistema</small></p>
             </div>
           </div>
           
-          <button class="btn btn-primary" onclick="sendTestMessage()">Enviar Mensaje de Prueba</button>
+          <div class="row">
+            <div class="col-md-6">
+              <h6>3. Obtener Contexto</h6>
+              <div class="bg-light p-3 rounded mb-3">
+                <code>GET /api/v1/conversations/context?user_id=1&whatsapp_client=+1234567890</code>
+              </div>
+              <p><small class="text-muted">Obtiene los últimos 4 mensajes para el LLM</small></p>
+            </div>
+            
+            <div class="col-md-6">
+              <h6>4. Consultar Horarios</h6>
+              <div class="bg-light p-3 rounded mb-3">
+                <code>GET /api/v1/calendar/user_schedule/1</code>
+              </div>
+              <p><small class="text-muted">Obtiene los horarios de atención del usuario</small></p>
+            </div>
+          </div>
+          
+          <div class="alert alert-info">
+            <strong>💡 Tip:</strong> Todos los endpoints de consulta son públicos. Solo los endpoints que modifican datos requieren autenticación JWT.
+          </div>
         </div>
       </div>
     </div>
   </div>
+</div>
 </div>
 
 <script>
@@ -216,29 +209,6 @@ document.getElementById('whatsapp-form').addEventListener('submit', function(e) 
   });
 });
 
-function copyWebhookUrl(phoneNumber) {
-  const url = '<%= request.base_url %>/api/v1/whatsapp/webhook/' + phoneNumber;
-  navigator.clipboard.writeText(url);
-  alert('URL del webhook copiada al portapapeles!\n\n' + url);
-}
-
-function testWebhook(phoneNumber) {
-  // Simple test to check if webhook endpoint responds
-  fetch(`/api/v1/whatsapp/webhook/${phoneNumber}`, {
-    method: 'GET'
-  })
-  .then(response => {
-    if (response.ok) {
-      alert('✅ Webhook endpoint está respondiendo correctamente');
-    } else {
-      alert('⚠️ El webhook endpoint no está funcionando correctamente');
-    }
-  })
-  .catch(error => {
-    alert('❌ Error al conectar con el webhook: ' + error.message);
-  });
-}
-
 function deleteNumber(numberId) {
   if (confirm('¿Estás seguro de que quieres eliminar este número?')) {
     fetch(`/api/v1/users/whatsapp_numbers/${numberId}`, {
@@ -261,56 +231,5 @@ function deleteNumber(numberId) {
       alert('Error al eliminar número');
     });
   }
-}
-
-function sendTestMessage() {
-  const phoneNumber = document.getElementById('test-phone-number').value;
-  const message = document.getElementById('test-message').value;
-  
-  if (!phoneNumber) {
-    alert('Por favor selecciona un número de WhatsApp');
-    return;
-  }
-  
-  if (!message) {
-    alert('Por favor escribe un mensaje de prueba');
-    return;
-  }
-  
-  // Simulate a WhatsApp webhook message
-  const testPayload = {
-    entry: [{
-      changes: [{
-        value: {
-          messages: [{
-            from: phoneNumber,
-            text: { body: message },
-            timestamp: Math.floor(Date.now() / 1000),
-            id: 'test_' + Date.now()
-          }]
-        }
-      }]
-    }]
-  };
-  
-  fetch(`/api/v1/whatsapp/webhook/${phoneNumber}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(testPayload)
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.status === 'ok') {
-      alert('✅ Mensaje de prueba procesado correctamente!\n\nRevisa los logs para ver la respuesta del asistente AI.');
-    } else {
-      alert('⚠️ Error al procesar mensaje: ' + JSON.stringify(data));
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('❌ Error al enviar mensaje de prueba: ' + error.message);
-  });
 }
 </script>

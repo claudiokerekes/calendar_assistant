@@ -1,6 +1,7 @@
 class User < ApplicationRecord
   has_many :whatsapp_numbers, dependent: :destroy
   has_many :calendar_configs, dependent: :destroy
+  has_many :conversations, dependent: :destroy
   
   validates :email, presence: true, uniqueness: true
   validates :google_id, presence: true, uniqueness: true
