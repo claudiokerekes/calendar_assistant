@@ -54,7 +54,7 @@ class Api::V1::ConversationsController < ApplicationController
   end
   
   # GET /api/v1/conversations/context?user_id=1&whatsapp_client=+1234567890
-  # Devuelve los últimos 4 mensajes para contexto del LLM
+  # Devuelve los últimos mensajes para contexto del LLM (excluyendo el último mensaje que ya está en n8n)
   def get_context
     begin
       user = User.find(params[:user_id])
@@ -72,17 +72,18 @@ class Api::V1::ConversationsController < ApplicationController
         return
       end
       
-      # Obtener los últimos 4 mensajes en orden cronológico
-      messages = conversation.latest_messages(4)
+      # Obtener los últimos 5 mensajes y excluir el más reciente (ya está en n8n)
+      all_messages = conversation.latest_messages(5)
+      messages = all_messages[0..-2] # Excluir el último mensaje
       
       formatted_messages = messages.map do |message|
         {
-          id: message.id,
+       #   id: message.id,
           message_content: message.message_content,
           user_type: message.user_type,
-          prompt_tokens: message.prompt_tokens,
-          completion_tokens: message.completion_tokens,
-          created_at: message.created_at
+         # prompt_tokens: message.prompt_tokens,
+         # completion_tokens: message.completion_tokens,
+        # created_at: message.created_at
         }
       end
       

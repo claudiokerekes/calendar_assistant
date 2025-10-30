@@ -20,7 +20,7 @@ class Api::V1::WhatsappController < ApplicationController
         data: {
           user_id: whatsapp_number.user.id,
           user_name: whatsapp_number.user.name,
-         # user_email: whatsapp_number.user.email,
+          user_email: whatsapp_number.user.email,
           phone_number: whatsapp_number.phone_number,
           is_active: whatsapp_number.is_active
         }

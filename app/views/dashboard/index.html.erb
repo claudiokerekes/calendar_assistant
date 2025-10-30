@@ -130,9 +130,7 @@
                   <tr>
                     <th>Número</th>
                     <th>Estado</th>
-                    <th>Webhook URL</th>
                     <th>Creado</th>
-                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -146,17 +144,9 @@
                           <span class="badge bg-secondary">Inactivo</span>
                         <% end %>
                       </td>
-                      <td>
-                        <small class="text-muted">
-                          <%= request.base_url %>/api/v1/whatsapp/webhook/<%= number.phone_number %>
-                        </small>
-                      </td>
+
                       <td><%= number.created_at.strftime("%d/%m/%Y") %></td>
-                      <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="copyWebhookUrl('<%= number.phone_number %>')">
-                          Copiar URL
-                        </button>
-                      </td>
+
                     </tr>
                   <% end %>
                 </tbody>
@@ -183,24 +173,22 @@
               <ul class="list-unstyled">
                 <li><code>GET /api/v1/calendar/events?date=YYYY-MM-DD</code></li>
                 <li><code>POST /api/v1/calendar/events</code></li>
-                <li><code>PUT /api/v1/calendar/events/:id</code></li>
-                <li><code>DELETE /api/v1/calendar/events/:id</code></li>
-                <li><code>GET /api/v1/calendar/availability?date=YYYY-MM-DD&duration=60</code></li>
+                <li><code>GET /api/v1/calendar/user_schedule/:id</code></li>
+                <li><code>GET /api/v1/calendar/schedule_config</code></li>
               </ul>
             </div>
             <div class="col-md-6">
-              <h6 class="text-primary">User API</h6>
+              <h6 class="text-primary">Conversations API</h6>
               <ul class="list-unstyled">
-                <li><code>GET /api/v1/users/profile</code></li>
-                <li><code>PUT /api/v1/users/profile</code></li>
-                <li><code>GET /api/v1/users/whatsapp_numbers</code></li>
-                <li><code>POST /api/v1/users/whatsapp_numbers</code></li>
+                <li><code>GET /api/v1/whatsapp/user_by_phone</code></li>
+                <li><code>POST /api/v1/conversations/message</code></li>
+                <li><code>GET /api/v1/conversations/context</code></li>
                 <li><code>POST /api/v1/users/generate_api_token</code></li>
               </ul>
             </div>
           </div>
           <p class="text-muted">
-            <strong>Autenticación:</strong> Incluye el header <code>Authorization: Bearer YOUR_TOKEN</code> en todas las peticiones a la API.
+            <strong>Autenticación:</strong> Los endpoints de consulta (GET) son públicos. Los endpoints que modifican datos requieren el header <code>Authorization: Bearer YOUR_TOKEN</code>.
           </p>
         </div>
       </div>
@@ -232,9 +220,5 @@ function generateApiToken() {
   });
 }
 
-function copyWebhookUrl(phoneNumber) {
-  const url = '<%= request.base_url %>/api/v1/whatsapp/webhook/' + phoneNumber;
-  navigator.clipboard.writeText(url);
-  alert('URL del webhook copiada al portapapeles!');
-}
+
 </script>

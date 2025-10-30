@@ -42,7 +42,6 @@ class Api::V1::UsersController < ApplicationController
           id: number.id,
           phone_number: number.phone_number,
           is_active: number.is_active,
-          webhook_url: number.webhook_url,
           created_at: number.created_at
         }
       end
@@ -64,8 +63,7 @@ class Api::V1::UsersController < ApplicationController
         whatsapp_number: {
           id: whatsapp_number.id,
           phone_number: whatsapp_number.phone_number,
-          is_active: whatsapp_number.is_active,
-          webhook_url: whatsapp_number.webhook_url
+          is_active: whatsapp_number.is_active
         }
       }, status: :created
     else
@@ -82,8 +80,7 @@ class Api::V1::UsersController < ApplicationController
         whatsapp_number: {
           id: whatsapp_number.id,
           phone_number: whatsapp_number.phone_number,
-          is_active: whatsapp_number.is_active,
-          webhook_url: whatsapp_number.webhook_url
+          is_active: whatsapp_number.is_active
         }
       }
     else
@@ -124,6 +121,6 @@ class Api::V1::UsersController < ApplicationController
   end
   
   def whatsapp_number_params
-    params.require(:whatsapp_number).permit(:phone_number, :webhook_url, :is_active)
+    params.require(:whatsapp_number).permit(:phone_number, :is_active)
   end
 end

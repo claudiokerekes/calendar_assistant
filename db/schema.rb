@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_10_28_215723) do
+ActiveRecord::Schema[7.2].define(version: 2025_10_30_154223) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -66,7 +66,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_28_215723) do
   create_table "whatsapp_numbers", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "phone_number", null: false
-    t.string "webhook_url"
     t.boolean "is_active", default: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
