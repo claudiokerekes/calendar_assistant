@@ -13,21 +13,6 @@ class Api::V1::CalendarController < ApplicationController
     day_of_week = date.wday
     calendar_configs = @current_user.calendar_configs.active.where(day_of_week: day_of_week)
     
-    # Formatear la configuración de horarios
-    schedule_config = {
-      date: date.strftime('%Y-%m-%d'),
-      day_name: CalendarConfig::DAY_NAMES[day_of_week],
-      is_available: calendar_configs.any?,
-      time_slots: calendar_configs.map do |config|
-        {
-          start_time: config.start_time.strftime('%H:%M'),
-          end_time: config.end_time.strftime('%H:%M'),
-          duration_hours: config.duration_in_hours,
-          notes: config.notes
-        }
-      end
-    }
-    
     begin
       events = @current_user.google_calendar_service.list_events(
         'primary',
@@ -37,41 +22,87 @@ class Api::V1::CalendarController < ApplicationController
         order_by: 'startTime'
       )
       
-      formatted_events = events.items.map do |event|
+      # Procesar eventos ocupados como slots de tiempo simples
+      occupied_slots = events.items.map do |event|
+        start_dt = event.start&.date_time || Time.parse(event.start&.date.to_s).beginning_of_day
+        end_dt = event.end&.date_time || Time.parse(event.end&.date.to_s).end_of_day
+        
         {
-          id: event.id,
-          summary: event.summary,
-          description: event.description,
-          start_time: event.start&.date_time || event.start&.date,
-          end_time: event.end&.date_time || event.end&.date,
-          location: event.location,
-          attendees: event.attendees&.map { |a| { email: a.email, name: a.display_name } }
+          start_time: start_dt.strftime('%H:%M'),
+          end_time: end_dt.strftime('%H:%M')
         }
+      end
+      
+      # Crear respuesta humanizada para el LLM
+      if calendar_configs.any?
+        available_periods = calendar_configs.map { |config| "#{config.start_time.strftime('%H:%M')} a #{config.end_time.strftime('%H:%M')}" }.join(', ')
+        availability_message = "Horarios de atención para #{CalendarConfig::DAY_NAMES[day_of_week]} #{date.strftime('%d/%m/%Y')}: #{available_periods}"
+      else
+        availability_message = "No hay horarios de atención configurados para #{CalendarConfig::DAY_NAMES[day_of_week]} #{date.strftime('%d/%m/%Y')}"
+      end
+      
+      if occupied_slots.any?
+        occupied_message = "Horarios ocupados: " + occupied_slots.map { |slot| "#{slot[:start_time]} a #{slot[:end_time]}" }.join(', ')
+      else
+        occupied_message = "No hay citas programadas"
       end
       
       render json: { 
         success: true,
         data: {
-          schedule_config: schedule_config,
-          events: formatted_events
+          date: date.strftime('%Y-%m-%d'),
+          day_name: CalendarConfig::DAY_NAMES[day_of_week],
+          availability_message: availability_message,
+          occupied_message: occupied_message,
+          has_availability: calendar_configs.any?,
+          occupied_slots: occupied_slots,
+          available_periods: calendar_configs.map do |config|
+            {
+              start_time: config.start_time.strftime('%H:%M'),
+              end_time: config.end_time.strftime('%H:%M')
+            }
+          end
         }
       }
     rescue Google::Apis::AuthorizationError
+      # Cuando no hay acceso al calendario, solo mostrar horarios de atención
+      if calendar_configs.any?
+        available_periods = calendar_configs.map { |config| "#{config.start_time.strftime('%H:%M')} a #{config.end_time.strftime('%H:%M')}" }.join(', ')
+        availability_message = "Horarios de atención para #{CalendarConfig::DAY_NAMES[day_of_week]} #{date.strftime('%d/%m/%Y')}: #{available_periods}"
+      else
+        availability_message = "No hay horarios de atención configurados para #{CalendarConfig::DAY_NAMES[day_of_week]} #{date.strftime('%d/%m/%Y')}"
+      end
+      
       render json: { 
         success: false,
-        error: 'Calendar access denied. Please re-authenticate.',
+        error: 'No hay acceso al calendario de Google. Solo se muestran horarios de atención configurados.',
         data: {
-          schedule_config: schedule_config,
-          events: []
+          date: date.strftime('%Y-%m-%d'),
+          day_name: CalendarConfig::DAY_NAMES[day_of_week],
+          availability_message: availability_message,
+          occupied_message: "No se pueden verificar citas existentes (sin acceso al calendario)",
+          has_availability: calendar_configs.any?,
+          occupied_slots: [],
+          available_periods: calendar_configs.map do |config|
+            {
+              start_time: config.start_time.strftime('%H:%M'),
+              end_time: config.end_time.strftime('%H:%M')
+            }
+          end
         }
       }, status: :unauthorized
     rescue StandardError => e
       render json: { 
         success: false,
-        error: e.message,
+        error: "Error interno: #{e.message}",
         data: {
-          schedule_config: schedule_config,
-          events: []
+          date: date.strftime('%Y-%m-%d'),
+          day_name: CalendarConfig::DAY_NAMES[day_of_week],
+          availability_message: "Error al obtener información",
+          occupied_message: "Error al verificar disponibilidad",
+          has_availability: false,
+          occupied_slots: [],
+          available_periods: []
         }
       }, status: :internal_server_error
     end
