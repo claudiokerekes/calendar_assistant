@@ -1,6 +1,23 @@
 class SessionsController < ApplicationController
+  skip_before_action :verify_authenticity_token, only: [:omniauth_callback]
+  protect_from_forgery with: :exception, except: [:omniauth_callback]
+  
   def new
     # Página de login
+  end
+
+  def omniauth_callback
+    user = User.from_omniauth(request.env['omniauth.auth'])
+    
+    if user.persisted?
+      session[:user_id] = user.id
+      redirect_to dashboard_path, notice: 'Login exitoso!'
+    else
+      redirect_to login_path, alert: 'Error en el login'
+    end
+  rescue => e
+    Rails.logger.error "OAuth Error: #{e.message}"
+    redirect_to login_path, alert: 'Error en la autenticación'
   end
 
   def omniauth
