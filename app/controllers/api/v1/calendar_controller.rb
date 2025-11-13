@@ -5,6 +5,7 @@ class Api::V1::CalendarController < ApplicationController
   
   # GET /api/v1/calendar/events?date=2023-10-24
   def events
+    puts "DATE PARAM: #{params[:date]}"
     date = Date.parse(params[:date]) rescue Date.current
     start_time = date.beginning_of_day.iso8601
     end_time = date.end_of_day.iso8601
@@ -47,8 +48,22 @@ class Api::V1::CalendarController < ApplicationController
         occupied_message = "No hay citas programadas"
       end
       
+      # Crear mensaje humanizado para el LLM
+      human_message = "📅 #{availability_message}\n\n"
+      human_message += "🔴 #{occupied_message}\n\n"
+      
+      if calendar_configs.any? && occupied_slots.any?
+        # Calcular horarios disponibles (simplificado)
+        human_message += "✅ Puedes ofrecer citas en los horarios de atención que NO estén ocupados."
+      elsif calendar_configs.any?
+        human_message += "✅ Todos los horarios de atención están disponibles para citas."
+      else
+        human_message += "❌ No hay horarios de atención configurados para este día."
+      end
+      
       render json: { 
         success: true,
+        message: human_message.strip,
         data: {
           date: date.strftime('%Y-%m-%d'),
           day_name: CalendarConfig::DAY_NAMES[day_of_week],
@@ -69,13 +84,16 @@ class Api::V1::CalendarController < ApplicationController
       if calendar_configs.any?
         available_periods = calendar_configs.map { |config| "#{config.start_time.strftime('%H:%M')} a #{config.end_time.strftime('%H:%M')}" }.join(', ')
         availability_message = "Horarios de atención para #{CalendarConfig::DAY_NAMES[day_of_week]} #{date.strftime('%d/%m/%Y')}: #{available_periods}"
+        human_message = "📅 #{availability_message}\n\n🔴 No se pueden verificar citas existentes (sin acceso al calendario)\n\n⚠️ Solo puedo mostrar horarios de atención, pero no puedo confirmar disponibilidad exacta."
       else
         availability_message = "No hay horarios de atención configurados para #{CalendarConfig::DAY_NAMES[day_of_week]} #{date.strftime('%d/%m/%Y')}"
+        human_message = "📅 #{availability_message}\n\n❌ No hay horarios de atención configurados para este día."
       end
       
       render json: { 
         success: false,
         error: 'No hay acceso al calendario de Google. Solo se muestran horarios de atención configurados.',
+        message: human_message,
         data: {
           date: date.strftime('%Y-%m-%d'),
           day_name: CalendarConfig::DAY_NAMES[day_of_week],
@@ -92,9 +110,12 @@ class Api::V1::CalendarController < ApplicationController
         }
       }, status: :unauthorized
     rescue StandardError => e
+      error_message = "❌ Error al obtener información del calendario: #{e.message}"
+      
       render json: { 
         success: false,
         error: "Error interno: #{e.message}",
+        message: error_message,
         data: {
           date: date.strftime('%Y-%m-%d'),
           day_name: CalendarConfig::DAY_NAMES[day_of_week],

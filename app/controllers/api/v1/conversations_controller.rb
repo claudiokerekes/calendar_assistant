@@ -77,7 +77,7 @@ class Api::V1::ConversationsController < ApplicationController
       recent_messages = conversation.messages
                                    .where('created_at >= ?', one_hour_ago)
                                    .order(created_at: :desc)
-                                   .limit(6) # Obtener 6 para excluir el último
+                                   .limit(20) # Obtener 6 para excluir el último
       
       messages = recent_messages[1..-1] || [] # Excluir el primer mensaje (más reciente)
       messages = messages.reverse # Ordenar cronológicamente
