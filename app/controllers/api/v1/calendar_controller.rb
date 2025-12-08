@@ -130,16 +130,35 @@ class Api::V1::CalendarController < ApplicationController
   end
   
   # POST /api/v1/calendar/events
+  # Parametros: summary, description, fecha (YYYY-MM-DD), hora_inicio (HH:MM), hora_fin (HH:MM)
   def create_event
     begin
+      # Validar parámetros requeridos
+      unless params[:summary].present? && params[:fecha].present? && params[:hora_inicio].present? && params[:hora_fin].present?
+        render json: { 
+          success: false, 
+          error: 'Faltan parámetros requeridos: summary, fecha, hora_inicio, hora_fin' 
+        }, status: :bad_request
+        return
+      end
+
+      # Construir fechas ISO 8601 a partir de fecha y horas
+      fecha = Date.parse(params[:fecha])
+      hora_inicio = Time.parse(params[:hora_inicio])
+      hora_fin = Time.parse(params[:hora_fin])
+      
+      # Combinar fecha con horas para crear DateTime
+      start_datetime = DateTime.new(fecha.year, fecha.month, fecha.day, hora_inicio.hour, hora_inicio.min)
+      end_datetime = DateTime.new(fecha.year, fecha.month, fecha.day, hora_fin.hour, hora_fin.min)
+      
       event = Google::Apis::CalendarV3::Event.new(
         summary: params[:summary],
         description: params[:description],
         start: Google::Apis::CalendarV3::EventDateTime.new(
-          date_time: DateTime.parse(params[:start_time])
+          date_time: start_datetime
         ),
         end: Google::Apis::CalendarV3::EventDateTime.new(
-          date_time: DateTime.parse(params[:end_time])
+          date_time: end_datetime
         ),
         location: params[:location]
       )
@@ -153,10 +172,15 @@ class Api::V1::CalendarController < ApplicationController
       created_event = @current_user.google_calendar_service.insert_event('primary', event)
       
       render json: {
+        success: true,
+        message: "Evento '#{created_event.summary}' creado exitosamente para el #{fecha.strftime('%d/%m/%Y')} de #{params[:hora_inicio]} a #{params[:hora_fin]}",
         event: {
           id: created_event.id,
           summary: created_event.summary,
           description: created_event.description,
+          fecha: fecha.strftime('%Y-%m-%d'),
+          hora_inicio: params[:hora_inicio],
+          hora_fin: params[:hora_fin],
           start_time: created_event.start.date_time,
           end_time: created_event.end.date_time,
           location: created_event.location,
@@ -164,9 +188,21 @@ class Api::V1::CalendarController < ApplicationController
         }
       }, status: :created
     rescue Google::Apis::AuthorizationError
-      render json: { error: 'Calendar access denied. Please re-authenticate.' }, status: :unauthorized
+      render json: { 
+        success: false,
+        error: 'No hay acceso al calendario de Google. Por favor re-autentícate.' 
+      }, status: :unauthorized
+    rescue Date::Error, ArgumentError => e
+      render json: { 
+        success: false,
+        error: 'Error en formato de fecha u hora. Usa formato: fecha (YYYY-MM-DD), hora_inicio/hora_fin (HH:MM)',
+        details: e.message
+      }, status: :bad_request
     rescue StandardError => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      render json: { 
+        success: false,
+        error: "Error al crear evento: #{e.message}" 
+      }, status: :unprocessable_entity
     end
   end
   
