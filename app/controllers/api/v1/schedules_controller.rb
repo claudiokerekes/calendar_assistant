@@ -13,9 +13,13 @@ module Api
           @schedules = current_user.schedules
         end
         
-        # Optional filtering
-        @schedules = @schedules.upcoming if params[:upcoming] == 'true'
-        @schedules = @schedules.past if params[:past] == 'true'
+        # Optional filtering (mutually exclusive)
+        if params[:upcoming] == 'true'
+          @schedules = @schedules.upcoming
+        elsif params[:past] == 'true'
+          @schedules = @schedules.past
+        end
+        
         @schedules = @schedules.on_date(params[:date]) if params[:date].present?
         
         render json: { schedules: @schedules.map { |s| schedule_response(s) } }

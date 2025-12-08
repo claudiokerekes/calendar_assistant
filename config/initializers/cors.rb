@@ -7,7 +7,9 @@
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins '*' # In production, you should restrict this to specific domains
+    # In production, restrict this to specific domains
+    # Example: origins 'https://yourdomain.com', 'https://n8n.yourdomain.com'
+    origins Rails.env.production? ? ENV.fetch('ALLOWED_ORIGINS', '').split(',') : '*'
     
     resource '*',
       headers: :any,

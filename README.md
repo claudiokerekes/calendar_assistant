@@ -280,11 +280,101 @@ rails db:seed          # Load seed data
 ## Production Deployment
 
 For production, consider:
-1. Using PostgreSQL instead of SQLite
-2. Setting environment variables for sensitive data
-3. Enabling SSL/HTTPS
-4. Setting up proper CORS policies (restrict origins in `config/initializers/cors.rb`)
-5. Using a secret key base from environment variables
+
+1. **Use PostgreSQL instead of SQLite**
+
+Update your `Gemfile`:
+```ruby
+# gem 'sqlite3', '~> 1.4'  # Comment out for production
+gem 'pg', '~> 1.1'  # Add PostgreSQL
+```
+
+Update `config/database.yml`:
+```yaml
+production:
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  database: calendar_assistant_production
+  username: <%= ENV['DATABASE_USER'] %>
+  password: <%= ENV['DATABASE_PASSWORD'] %>
+  host: <%= ENV['DATABASE_HOST'] %>
+```
+
+2. **Environment Variables**
+
+Copy `.env.example` to `.env` and set:
+```bash
+SECRET_KEY_BASE=$(rails secret)
+ALLOWED_ORIGINS=https://yourdomain.com,https://n8n.yourdomain.com
+DATABASE_URL=postgresql://user:password@localhost/calendar_assistant_production
+RAILS_ENV=production
+```
+
+3. **Security Configurations**
+
+- Enable SSL/HTTPS (uncomment `config.force_ssl = true` in `config/environments/production.rb`)
+- Set proper CORS policies in `config/initializers/cors.rb` via `ALLOWED_ORIGINS` env var
+- Use a strong secret key base from environment variables
+- Never commit secrets or credentials to version control
+
+4. **Database Setup**
+
+```bash
+RAILS_ENV=production rails db:create db:migrate
+```
+
+5. **Asset Compilation** (if needed)
+
+```bash
+RAILS_ENV=production rails assets:precompile
+```
+
+6. **Running in Production**
+
+```bash
+RAILS_ENV=production bundle exec puma -C config/puma.rb
+```
+
+Or use a process manager like systemd, Docker, or a platform like Heroku:
+
+**Heroku Deployment:**
+```bash
+heroku create your-app-name
+heroku addons:create heroku-postgresql
+git push heroku main
+heroku run rails db:migrate
+```
+
+**Docker Example:**
+
+Create a `Dockerfile`:
+```dockerfile
+FROM ruby:3.2.3
+
+WORKDIR /app
+
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+```
+
+7. **Monitoring and Logging**
+
+- Set up application monitoring (New Relic, Datadog, etc.)
+- Configure log aggregation (Papertrail, LogDNA, etc.)
+- Set up error tracking (Sentry, Rollbar, etc.)
+
+8. **Backup Strategy**
+
+- Regular database backups
+- Store backups securely off-site
+- Test backup restoration procedures
 
 ## License
 

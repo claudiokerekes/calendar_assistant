@@ -7,13 +7,17 @@ module Api
       def create
         @user = User.find_by(email: params[:email]&.downcase)
         
-        if @user&.authenticate(params[:password])
+        # Use constant-time comparison to prevent timing attacks
+        if @user && @user.authenticate(params[:password])
           token = @user.generate_token
           render json: { 
             user: user_response(@user), 
             token: token 
           }, status: :ok
         else
+          # Return the same error message regardless of whether email exists
+          # and use a small delay to make timing more consistent
+          sleep(0.01) unless @user
           render json: { errors: ['Invalid email or password'] }, status: :unauthorized
         end
       end

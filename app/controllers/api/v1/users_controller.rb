@@ -42,8 +42,8 @@ module Api
       private
       
       def set_user
-        @user = User.find(params[:id])
-        unless @user.id == current_user.id
+        @user = current_user
+        unless @user.id == params[:id].to_i
           render json: { errors: ['Forbidden'] }, status: :forbidden
         end
       end
