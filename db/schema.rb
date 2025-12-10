@@ -10,8 +10,36 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 0) do
+ActiveRecord::Schema[7.2].define(version: 2025_10_24_030054) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
+  create_table "users", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "name"
+    t.string "google_id", null: false
+    t.text "access_token"
+    t.text "refresh_token"
+    t.datetime "expires_at"
+    t.string "provider", default: "google"
+    t.string "plan", default: "basic"
+    t.integer "whatsapp_numbers_limit", default: 1
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["google_id"], name: "index_users_on_google_id", unique: true
+  end
+
+  create_table "whatsapp_numbers", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "phone_number", null: false
+    t.string "webhook_url"
+    t.boolean "is_active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["phone_number"], name: "index_whatsapp_numbers_on_phone_number", unique: true
+    t.index ["user_id"], name: "index_whatsapp_numbers_on_user_id"
+  end
+
+  add_foreign_key "whatsapp_numbers", "users"
 end

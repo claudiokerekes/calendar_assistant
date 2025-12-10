@@ -1,0 +1,154 @@
+<div class="hero-section bg-light py-5">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-6">
+        <h1 class="display-4 fw-bold text-primary">Calendar Assistant</h1>
+        <p class="lead">Gestiona tu calendario de Google a través de WhatsApp con inteligencia artificial</p>
+        <ul class="list-unstyled">
+          <li class="mb-2">📅 <strong>Consulta tu agenda</strong> desde WhatsApp</li>
+          <li class="mb-2">➕ <strong>Crea citas</strong> de manera natural</li>
+          <li class="mb-2">🤖 <strong>Asistente AI</strong> inteligente</li>
+          <li class="mb-2">🔒 <strong>Seguro y privado</strong></li>
+        </ul>
+        
+        <% unless current_user %>
+          <div class="mt-4">
+            <%= link_to "/auth/google_oauth2", method: :post, class: "btn btn-primary btn-lg" do %>
+              <i class="fab fa-google me-2"></i>
+              Iniciar sesión con Google
+            <% end %>
+          </div>
+        <% else %>
+          <div class="mt-4">
+            <%= link_to "Ir al Dashboard", dashboard_path, class: "btn btn-primary btn-lg" %>
+          </div>
+        <% end %>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="text-center">
+          <img src="https://via.placeholder.com/400x300/007bff/ffffff?text=Calendar+AI" alt="Calendar Assistant" class="img-fluid rounded shadow">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="features-section py-5">
+  <div class="container">
+    <div class="row">
+      <div class="col-12 text-center mb-5">
+        <h2 class="fw-bold">¿Cómo funciona?</h2>
+        <p class="lead text-muted">Simple, rápido y eficiente</p>
+      </div>
+    </div>
+    
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <div class="mb-3">
+              <i class="fas fa-user-plus fa-3x text-primary"></i>
+            </div>
+            <h5 class="card-title">1. Regístrate</h5>
+            <p class="card-text">Inicia sesión con tu cuenta de Google y conecta tu calendario</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <div class="mb-3">
+              <i class="fab fa-whatsapp fa-3x text-success"></i>
+            </div>
+            <h5 class="card-title">2. Configura WhatsApp</h5>
+            <p class="card-text">Agrega tu número de WhatsApp para recibir notificaciones</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <div class="mb-3">
+              <i class="fas fa-calendar-check fa-3x text-info"></i>
+            </div>
+            <h5 class="card-title">3. ¡Listo!</h5>
+            <p class="card-text">Gestiona tu calendario desde WhatsApp con mensajes naturales</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pricing-section py-5 bg-light">
+  <div class="container">
+    <div class="row">
+      <div class="col-12 text-center mb-5">
+        <h2 class="fw-bold">Planes y Precios</h2>
+        <p class="lead text-muted">Elige el plan que mejor se adapte a tus necesidades</p>
+      </div>
+    </div>
+    
+    <div class="row justify-content-center">
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-0 shadow">
+          <div class="card-body text-center p-4">
+            <h5 class="card-title">Básico</h5>
+            <h2 class="fw-bold text-primary">Gratis</h2>
+            <ul class="list-unstyled">
+              <li class="mb-2">✅ 1 número de WhatsApp</li>
+              <li class="mb-2">✅ Consultas de agenda</li>
+              <li class="mb-2">✅ Crear eventos básicos</li>
+              <li class="mb-2">✅ Soporte por email</li>
+            </ul>
+            <% unless current_user %>
+              <%= link_to "/auth/google_oauth2", method: :post, class: "btn btn-primary" do %>
+                Comenzar Gratis
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-primary shadow">
+          <div class="card-header bg-primary text-white text-center">
+            <h6 class="mb-0">Más Popular</h6>
+          </div>
+          <div class="card-body text-center p-4">
+            <h5 class="card-title">Premium</h5>
+            <h2 class="fw-bold text-primary">$19<small class="text-muted">/mes</small></h2>
+            <ul class="list-unstyled">
+              <li class="mb-2">✅ 5 números de WhatsApp</li>
+              <li class="mb-2">✅ AI avanzada</li>
+              <li class="mb-2">✅ Recordatorios automáticos</li>
+              <li class="mb-2">✅ Integraciones</li>
+              <li class="mb-2">✅ Soporte prioritario</li>
+            </ul>
+            <button class="btn btn-primary" disabled>Próximamente</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-0 shadow">
+          <div class="card-body text-center p-4">
+            <h5 class="card-title">Empresarial</h5>
+            <h2 class="fw-bold text-primary">$99<small class="text-muted">/mes</small></h2>
+            <ul class="list-unstyled">
+              <li class="mb-2">✅ Números ilimitados</li>
+              <li class="mb-2">✅ API completa</li>
+              <li class="mb-2">✅ Webhooks personalizados</li>
+              <li class="mb-2">✅ Soporte dedicado</li>
+              <li class="mb-2">✅ SLA garantizado</li>
+            </ul>
+            <button class="btn btn-outline-primary" disabled>Contactar Ventas</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

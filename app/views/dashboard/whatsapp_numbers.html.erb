@@ -1,0 +1,316 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>📱 Gestión de WhatsApp</h1>
+        <%= link_to "← Volver al Dashboard", dashboard_path, class: "btn btn-outline-secondary" %>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add WhatsApp Number Form -->
+  <% if current_user.can_add_whatsapp_number? %>
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">➕ Agregar Nuevo Número</h5>
+          </div>
+          <div class="card-body">
+            <%= form_with(model: [@new_whatsapp_number], url: '/api/v1/users/whatsapp_numbers', local: false, html: { id: 'whatsapp-form' }) do |form| %>
+              <div class="mb-3">
+                <%= form.label :phone_number, "Número de WhatsApp", class: "form-label" %>
+                <%= form.telephone_field :phone_number, class: "form-control", placeholder: "+1234567890", required: true %>
+                <div class="form-text">Incluye el código de país (ej: +52, +1, +34)</div>
+              </div>
+              
+              <div class="mb-3">
+                <%= form.label :webhook_url, "Webhook URL (opcional)", class: "form-label" %>
+                <%= form.url_field :webhook_url, class: "form-control", placeholder: "https://tu-app.com/webhook" %>
+                <div class="form-text">URL personalizada para recibir webhooks</div>
+              </div>
+              
+              <div class="mb-3 form-check">
+                <%= form.check_box :is_active, class: "form-check-input", checked: true %>
+                <%= form.label :is_active, "Activar inmediatamente", class: "form-check-label" %>
+              </div>
+              
+              <%= form.submit "Agregar Número", class: "btn btn-primary" %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-6">
+        <div class="card bg-light">
+          <div class="card-body">
+            <h6 class="card-title">ℹ️ Instrucciones</h6>
+            <ol>
+              <li>Agrega tu número de WhatsApp con código de país</li>
+              <li>Copia la URL del webhook que se generará</li>
+              <li>Configura esta URL en tu proveedor de WhatsApp API</li>
+              <li>¡Comienza a chatear con tu asistente!</li>
+            </ol>
+            
+            <hr>
+            
+            <h6>🔧 Proveedores compatibles:</h6>
+            <ul class="list-unstyled">
+              <li>• Twilio WhatsApp API</li>
+              <li>• WhatsApp Business API</li>
+              <li>• Meta WhatsApp Cloud API</li>
+              <li>• 360Dialog</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="alert alert-warning">
+          <h5>⚠️ Límite alcanzado</h5>
+          <p>Has alcanzado el límite de <%= current_user.whatsapp_numbers_limit %> números para tu plan <%= current_user.plan %>.</p>
+          <p>Considera actualizar tu plan para agregar más números.</p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+  
+  <!-- Existing WhatsApp Numbers -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">📋 Números Configurados</h5>
+        </div>
+        <div class="card-body">
+          <% if @whatsapp_numbers.any? %>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Estado</th>
+                    <th>Webhook URL</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @whatsapp_numbers.each do |number| %>
+                    <tr>
+                      <td>
+                        <strong><%= number.phone_number %></strong>
+                      </td>
+                      <td>
+                        <% if number.is_active? %>
+                          <span class="badge bg-success">Activo</span>
+                        <% else %>
+                          <span class="badge bg-secondary">Inactivo</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% if number.webhook_url.present? %>
+                          <small class="text-muted"><%= number.webhook_url %></small>
+                        <% else %>
+                          <small class="text-muted">
+                            <%= request.base_url %>/api/v1/whatsapp/webhook/<%= number.phone_number %>
+                          </small>
+                        <% end %>
+                      </td>
+                      <td><%= number.created_at.strftime("%d/%m/%Y %H:%M") %></td>
+                      <td>
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-primary" onclick="copyWebhookUrl('<%= number.phone_number %>')">
+                            📋 Copiar URL
+                          </button>
+                          <button class="btn btn-outline-secondary" onclick="testWebhook('<%= number.phone_number %>')">
+                            🧪 Test
+                          </button>
+                          <button class="btn btn-outline-danger" onclick="deleteNumber(<%= number.id %>)">
+                            🗑️ Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <div class="text-center py-4">
+              <p class="text-muted">No tienes números de WhatsApp configurados aún.</p>
+              <% if current_user.can_add_whatsapp_number? %>
+                <p>¡Agrega tu primer número usando el formulario de arriba!</p>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Webhook Testing -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">🧪 Prueba tu Webhook</h5>
+        </div>
+        <div class="card-body">
+          <p>Envía un mensaje de prueba a tu webhook para verificar que todo funciona correctamente:</p>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Número de WhatsApp</label>
+                <select id="test-phone-number" class="form-select">
+                  <option value="">Selecciona un número</option>
+                  <% @whatsapp_numbers.each do |number| %>
+                    <option value="<%= number.phone_number %>"><%= number.phone_number %></option>
+                  <% end %>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Mensaje de prueba</label>
+                <input type="text" id="test-message" class="form-control" value="Hola, ¿cómo está mi agenda hoy?" placeholder="Escribe un mensaje...">
+              </div>
+            </div>
+          </div>
+          
+          <button class="btn btn-primary" onclick="sendTestMessage()">Enviar Mensaje de Prueba</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('whatsapp-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  
+  fetch('/api/v1/users/whatsapp_numbers', {
+    method: 'POST',
+    headers: {
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.whatsapp_number) {
+      alert('¡Número agregado exitosamente!');
+      location.reload();
+    } else {
+      alert('Error: ' + (data.errors ? data.errors.join(', ') : 'Error desconocido'));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error al agregar número');
+  });
+});
+
+function copyWebhookUrl(phoneNumber) {
+  const url = '<%= request.base_url %>/api/v1/whatsapp/webhook/' + phoneNumber;
+  navigator.clipboard.writeText(url);
+  alert('URL del webhook copiada al portapapeles!\n\n' + url);
+}
+
+function testWebhook(phoneNumber) {
+  // Simple test to check if webhook endpoint responds
+  fetch(`/api/v1/whatsapp/webhook/${phoneNumber}`, {
+    method: 'GET'
+  })
+  .then(response => {
+    if (response.ok) {
+      alert('✅ Webhook endpoint está respondiendo correctamente');
+    } else {
+      alert('⚠️ El webhook endpoint no está funcionando correctamente');
+    }
+  })
+  .catch(error => {
+    alert('❌ Error al conectar con el webhook: ' + error.message);
+  });
+}
+
+function deleteNumber(numberId) {
+  if (confirm('¿Estás seguro de que quieres eliminar este número?')) {
+    fetch(`/api/v1/users/whatsapp_numbers/${numberId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.message) {
+        alert('Número eliminado exitosamente');
+        location.reload();
+      } else {
+        alert('Error al eliminar número');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error al eliminar número');
+    });
+  }
+}
+
+function sendTestMessage() {
+  const phoneNumber = document.getElementById('test-phone-number').value;
+  const message = document.getElementById('test-message').value;
+  
+  if (!phoneNumber) {
+    alert('Por favor selecciona un número de WhatsApp');
+    return;
+  }
+  
+  if (!message) {
+    alert('Por favor escribe un mensaje de prueba');
+    return;
+  }
+  
+  // Simulate a WhatsApp webhook message
+  const testPayload = {
+    entry: [{
+      changes: [{
+        value: {
+          messages: [{
+            from: phoneNumber,
+            text: { body: message },
+            timestamp: Math.floor(Date.now() / 1000),
+            id: 'test_' + Date.now()
+          }]
+        }
+      }]
+    }]
+  };
+  
+  fetch(`/api/v1/whatsapp/webhook/${phoneNumber}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(testPayload)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      alert('✅ Mensaje de prueba procesado correctamente!\n\nRevisa los logs para ver la respuesta del asistente AI.');
+    } else {
+      alert('⚠️ Error al procesar mensaje: ' + JSON.stringify(data));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('❌ Error al enviar mensaje de prueba: ' + error.message);
+  });
+}
+</script>

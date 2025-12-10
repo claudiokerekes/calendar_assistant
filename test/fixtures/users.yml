@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  email: MyString
+  name: MyString
+  google_id: MyString
+  access_token: MyText
+  refresh_token: MyText
+  expires_at: 2025-10-23 22:00:32
+  provider: MyString
+  plan: MyString
+  whatsapp_numbers_limit: 1
+
+two:
+  email: MyString
+  name: MyString
+  google_id: MyString
+  access_token: MyText
+  refresh_token: MyText
+  expires_at: 2025-10-23 22:00:32
+  provider: MyString
+  plan: MyString
+  whatsapp_numbers_limit: 1

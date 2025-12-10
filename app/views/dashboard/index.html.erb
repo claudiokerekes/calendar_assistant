@@ -1,0 +1,184 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Dashboard</h1>
+        <div>
+          <span class="badge bg-primary"><%= current_user.plan.capitalize %></span>
+          <span class="text-muted">Plan actual</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- User Info Card -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">👋 Bienvenido, <%= current_user.name %></h5>
+          <p class="card-text">
+            <strong>Email:</strong> <%= current_user.email %><br>
+            <strong>Plan:</strong> <%= current_user.plan.capitalize %><br>
+            <strong>Límite WhatsApp:</strong> <%= current_user.whatsapp_numbers_limit %> números
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">📱 Números de WhatsApp</h5>
+          <p class="card-text">
+            <span class="h3"><%= @whatsapp_numbers.count %></span> / <%= current_user.whatsapp_numbers_limit %>
+            <br>
+            <small class="text-muted">Números configurados</small>
+          </p>
+          <% if @can_add_number %>
+            <%= link_to "Agregar Número", dashboard_whatsapp_path, class: "btn btn-sm btn-primary" %>
+          <% else %>
+            <span class="text-muted">Límite alcanzado</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">🔑 API Access</h5>
+          <p class="card-text">
+            <small class="text-muted">Genera un token para usar la API</small>
+          </p>
+          <button class="btn btn-sm btn-outline-primary" onclick="generateApiToken()">
+            Generar Token
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- WhatsApp Numbers -->
+  <% if @whatsapp_numbers.any? %>
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">📱 Tus Números de WhatsApp</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Estado</th>
+                    <th>Webhook URL</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @whatsapp_numbers.each do |number| %>
+                    <tr>
+                      <td><%= number.phone_number %></td>
+                      <td>
+                        <% if number.is_active? %>
+                          <span class="badge bg-success">Activo</span>
+                        <% else %>
+                          <span class="badge bg-secondary">Inactivo</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <small class="text-muted">
+                          <%= request.base_url %>/api/v1/whatsapp/webhook/<%= number.phone_number %>
+                        </small>
+                      </td>
+                      <td><%= number.created_at.strftime("%d/%m/%Y") %></td>
+                      <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="copyWebhookUrl('<%= number.phone_number %>')">
+                          Copiar URL
+                        </button>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+  
+  <!-- API Documentation -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">📚 Documentación de API</h5>
+        </div>
+        <div class="card-body">
+          <h6>Endpoints Disponibles:</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-primary">Calendar API</h6>
+              <ul class="list-unstyled">
+                <li><code>GET /api/v1/calendar/events?date=YYYY-MM-DD</code></li>
+                <li><code>POST /api/v1/calendar/events</code></li>
+                <li><code>PUT /api/v1/calendar/events/:id</code></li>
+                <li><code>DELETE /api/v1/calendar/events/:id</code></li>
+                <li><code>GET /api/v1/calendar/availability?date=YYYY-MM-DD&duration=60</code></li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-primary">User API</h6>
+              <ul class="list-unstyled">
+                <li><code>GET /api/v1/users/profile</code></li>
+                <li><code>PUT /api/v1/users/profile</code></li>
+                <li><code>GET /api/v1/users/whatsapp_numbers</code></li>
+                <li><code>POST /api/v1/users/whatsapp_numbers</code></li>
+                <li><code>POST /api/v1/users/generate_api_token</code></li>
+              </ul>
+            </div>
+          </div>
+          <p class="text-muted">
+            <strong>Autenticación:</strong> Incluye el header <code>Authorization: Bearer YOUR_TOKEN</code> en todas las peticiones a la API.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function generateApiToken() {
+  fetch('/api/v1/users/generate_api_token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.api_token) {
+      navigator.clipboard.writeText(data.api_token);
+      alert('Token generado y copiado al portapapeles!\n\n' + data.api_token);
+    } else {
+      alert('Error al generar token');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error al generar token');
+  });
+}
+
+function copyWebhookUrl(phoneNumber) {
+  const url = '<%= request.base_url %>/api/v1/whatsapp/webhook/' + phoneNumber;
+  navigator.clipboard.writeText(url);
+  alert('URL del webhook copiada al portapapeles!');
+}
+</script>

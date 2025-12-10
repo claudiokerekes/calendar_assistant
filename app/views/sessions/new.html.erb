@@ -1,0 +1,35 @@
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow-lg border-0 mt-5">
+        <div class="card-body p-5">
+          <div class="text-center mb-4">
+            <h1 class="fw-bold text-primary">Iniciar Sesión</h1>
+            <p class="text-muted">Accede a tu Calendar Assistant</p>
+          </div>
+          
+          <div class="d-grid gap-2">
+            <%= link_to "/auth/google_oauth2", method: :post, class: "btn btn-primary btn-lg" do %>
+              <i class="fab fa-google me-2"></i>
+              Continuar con Google
+            <% end %>
+          </div>
+          
+          <div class="text-center mt-4">
+            <small class="text-muted">
+              Al iniciar sesión, aceptas nuestros términos de servicio y política de privacidad.
+              <br><br>
+              Necesitarás autorizar el acceso a tu Google Calendar para usar todas las funcionalidades.
+            </small>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-center mt-4">
+        <p class="text-muted">
+          ¿No tienes cuenta? El registro es automático con Google
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
