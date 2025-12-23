@@ -36,7 +36,10 @@ Rails.application.routes.draw do
   # API routes
   namespace :api do
     namespace :v1 do
-      # Calendar API
+      # New Appointments API (replaces calendar events)
+      resources :appointments, only: [:index, :show, :create, :update, :destroy]
+      
+      # Calendar API (legacy, mantener por compatibilidad)
       resources :calendar, only: [] do
         collection do
           get :events

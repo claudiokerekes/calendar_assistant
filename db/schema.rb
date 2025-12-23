@@ -10,9 +10,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_10_30_154223) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_11_000252) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "appointments", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.datetime "start_datetime", null: false
+    t.datetime "end_datetime", null: false
+    t.integer "status", default: 0
+    t.string "location"
+    t.string "whatsapp_client"
+    t.json "external_calendar_ids", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_appointments_on_status"
+    t.index ["user_id", "start_datetime"], name: "index_appointments_on_user_id_and_start_datetime"
+    t.index ["user_id", "whatsapp_client"], name: "index_appointments_on_user_id_and_whatsapp_client"
+    t.index ["user_id"], name: "index_appointments_on_user_id"
+  end
 
   create_table "calendar_configs", force: :cascade do |t|
     t.bigint "user_id", null: false
@@ -24,6 +42,20 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_30_154223) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_calendar_configs_on_user_id"
+  end
+
+  create_table "calendar_syncs", force: :cascade do |t|
+    t.bigint "appointment_id", null: false
+    t.string "service_type", null: false
+    t.string "external_event_id"
+    t.integer "sync_status", default: 0
+    t.datetime "last_synced_at"
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["appointment_id", "service_type"], name: "index_calendar_syncs_on_appointment_id_and_service_type", unique: true
+    t.index ["appointment_id"], name: "index_calendar_syncs_on_appointment_id"
+    t.index ["sync_status"], name: "index_calendar_syncs_on_sync_status"
   end
 
   create_table "conversations", force: :cascade do |t|
@@ -73,7 +105,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_30_154223) do
     t.index ["user_id"], name: "index_whatsapp_numbers_on_user_id"
   end
 
+  add_foreign_key "appointments", "users"
   add_foreign_key "calendar_configs", "users"
+  add_foreign_key "calendar_syncs", "appointments"
   add_foreign_key "conversations", "users"
   add_foreign_key "messages", "conversations"
   add_foreign_key "whatsapp_numbers", "users"
